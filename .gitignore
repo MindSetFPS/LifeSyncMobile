@@ -1,0 +1,27 @@
+# Python / FastAPI
+__pycache__/
+*.py[cod]
+*.db
+*.sqlite3
+.env
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+backend/keys/*.pem
+
+# Android / Gradle / Kotlin
+.gradle/
+local.properties
+*.iml
+.idea/
+build/
+*.apk
+*.aab
+.cxx/
+kotlin-compiler-daemon*.log
+
+# IDE / SO
+.vscode/
+.DS_Store
