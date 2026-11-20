@@ -69,3 +69,13 @@ mobile/app/build/outputs/bundle/release/app-release.aab
 - [x] Mensajes de error sin información sensible
 - [ ] Firma real y subida a Play Console (requiere credenciales del propietario)
 - [ ] Pruebas UI/instrumentadas (Sprint 2)
+
+## 7. Notas de versión 0.1.0 (Sprint 1)
+
+- Autenticación remota OAuth 2.0 con JWT firmado RS256 (RSA-4096).
+- Contraseñas almacenadas solo como hash bcrypt saltado.
+- JWT persistido en Android Keystore mediante `EncryptedSharedPreferences`.
+- Arquitectura limpia por capas y navegación protegida (grafo autenticado/no autenticado).
+- API centralizada con conexión Singleton y renovación automática de tokens.
+- Verificación en emulador: login, perfil, persistencia de sesión y logout.
+- Pruebas: 14/14 backend (pytest), 9/9 móvil (JUnit JVM).
