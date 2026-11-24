@@ -50,9 +50,7 @@ autenticación remota asíncrono con persistencia local cifrada por hardware.
 
     • Controles de Codificación Segura y Privacidad:
         o Validación sintáctica en formularios locales del teléfono antes del envío para optimizar rendimiento.
-        o Mitigación obligatoria de vulnerabilidades de Referencia
-
-# Directa Insegura a Objetos (IDOR) en el servidor: la nube debe validar que el request.auth.uid sea el legítimo dueño del registro médico que se intenta leer o editar.
+        o Mitigación obligatoria de vulnerabilidades de Referencia Directa Insegura a Objetos (IDOR) en el servidor: la nube debe validar que el request.auth.uid sea el legítimo dueño del registro médico que se intenta leer o editar.
 
 Semana 3: Sprint 3 – Gestión de Alertas, Sensores Nativos y Manejo de Estados (Cubre las Unidades I, II y III)
 
