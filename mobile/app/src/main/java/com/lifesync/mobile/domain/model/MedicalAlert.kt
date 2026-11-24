@@ -1,0 +1,26 @@
+package com.lifesync.mobile.domain.model
+
+data class MedicalAlert(
+    val id: String,
+    val userId: String,
+    val type: AlertType,
+    val severity: AlertSeverity,
+    val title: String,
+    val message: String,
+    val relatedType: AlertRelatedType,
+    val relatedId: String?,
+    val scheduledAt: String?,
+    val recurrenceRule: String?,
+    val timezone: String,
+    val isEnabled: Boolean,
+    val nextFireAt: String?,
+    val lastFiredAt: String?,
+    val acknowledgedAt: String?,
+    val snoozedUntil: String?,
+    val escalateToContactId: String?,
+    val delivery: AlertDelivery,
+    val version: Int,
+    val createdAt: String,
+    val updatedAt: String,
+    val deletedAt: String? = null,
+)

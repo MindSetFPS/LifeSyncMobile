@@ -1,0 +1,27 @@
+package com.lifesync.mobile.domain.model
+
+data class Medication(
+    val id: String,
+    val userId: String,
+    val name: String,
+    val activeIngredient: String?,
+    val dosage: String,
+    val doseUnit: DoseUnit,
+    val route: MedicationRoute,
+    val frequencyText: String,
+    val intervalHours: Int?,
+    val reminderTimes: List<String>,
+    val isControlled: Boolean,
+    val controlledSchedule: String?,
+    val prescriberName: String?,
+    val prescriptionNumber: String?,
+    val startDate: String,
+    val endDate: String?,
+    val isActive: Boolean,
+    val indication: String?,
+    val showInEmergency: Boolean,
+    val version: Int,
+    val createdAt: String,
+    val updatedAt: String,
+    val deletedAt: String? = null,
+)
