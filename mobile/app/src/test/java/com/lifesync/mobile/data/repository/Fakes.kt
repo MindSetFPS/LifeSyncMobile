@@ -2,12 +2,13 @@ package com.lifesync.mobile.data.repository
 
 import com.lifesync.mobile.core.result.Resource
 import com.lifesync.mobile.core.security.TokenStorage
-import com.lifesync.mobile.data.remote.dto.RegisterRequest
 import com.lifesync.mobile.data.remote.dto.RefreshRequest
+import com.lifesync.mobile.data.remote.dto.RegisterRequest
 import com.lifesync.mobile.data.remote.dto.TokenDto
 import com.lifesync.mobile.data.remote.dto.UserDto
 import com.lifesync.mobile.data.remote.service.AuthApiService
 import com.lifesync.mobile.domain.model.AuthToken
+import com.lifesync.mobile.domain.model.AuthorizationRequest
 import com.lifesync.mobile.domain.model.User
 import com.lifesync.mobile.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +20,7 @@ val testTokenDto = TokenDto(
     refreshToken = "refresh-jwt",
     tokenType = "bearer",
     expiresIn = 900,
+    scope = "read write offline_access",
 )
 
 val testUserDto = UserDto(
@@ -33,10 +35,37 @@ class FakeAuthApiService : AuthApiService {
     var registerResult: UserDto? = null
     var meResult: UserDto? = null
     var refreshResult: TokenDto? = null
+    var exchangeResult: TokenDto? = null
+    var revokeResult: Unit = Unit
     var throwable: Throwable? = null
+    var revokeThrowable: Throwable? = null
 
-    override suspend fun login(username: String, password: String, grantType: String): TokenDto =
-        throwable?.let { throw it } ?: loginResult ?: error("loginResult no configurado")
+    var lastExchangedCode: String? = null
+        private set
+    var lastExchangedVerifier: String? = null
+        private set
+    var revokedToken: String? = null
+        private set
+
+    override suspend fun login(
+        username: String,
+        password: String,
+        grantType: String,
+        scope: String?,
+    ): TokenDto = throwable?.let { throw it } ?: loginResult ?: error("loginResult no configurado")
+
+    override suspend fun exchangeAuthorizationCode(
+        grantType: String,
+        code: String,
+        redirectUri: String,
+        codeVerifier: String,
+        clientId: String,
+    ): TokenDto {
+        throwable?.let { throw it }
+        lastExchangedCode = code
+        lastExchangedVerifier = codeVerifier
+        return exchangeResult ?: error("exchangeResult no configurado")
+    }
 
     override suspend fun register(request: RegisterRequest): UserDto =
         throwable?.let { throw it } ?: registerResult ?: error("registerResult no configurado")
@@ -46,6 +75,11 @@ class FakeAuthApiService : AuthApiService {
 
     override suspend fun refresh(request: RefreshRequest): TokenDto =
         throwable?.let { throw it } ?: refreshResult ?: error("refreshResult no configurado")
+
+    override suspend fun revoke(token: String, tokenTypeHint: String) {
+        revokeThrowable?.let { throw it }
+        revokedToken = token
+    }
 }
 
 class FakeTokenStorage : TokenStorage {
@@ -83,12 +117,28 @@ class FakeAuthRepository : AuthRepository {
     var loginResult: Resource<AuthToken> = Resource.Error("no configurado")
     var registerResult: Resource<User> = Resource.Error("no configurado")
     var profileResult: Resource<User> = Resource.Error("no configurado")
+    var authorizationResult: Resource<AuthToken> = Resource.Error("no configurado")
+    var authorizationRequest: AuthorizationRequest =
+        AuthorizationRequest(url = "https://server/oauth/authorize?state=s", state = "s")
+
     val loginCalls = mutableListOf<Pair<String, String>>()
+    val exchangeCalls = mutableListOf<Pair<String, String?>>()
 
     override suspend fun login(email: String, password: String): Resource<AuthToken> {
         loginCalls += email to password
         if (loginResult is Resource.Success) _isAuthenticated.value = true
         return loginResult
+    }
+
+    override suspend fun startAuthorization(): AuthorizationRequest = authorizationRequest
+
+    override suspend fun exchangeAuthorizationCode(
+        code: String,
+        state: String?,
+    ): Resource<AuthToken> {
+        exchangeCalls += code to state
+        if (authorizationResult is Resource.Success) _isAuthenticated.value = true
+        return authorizationResult
     }
 
     override suspend fun register(

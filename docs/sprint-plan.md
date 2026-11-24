@@ -16,6 +16,14 @@
 - [x] Endpoint OAuth 2.0 `/auth/token` con JWT firmado RS256 (RSA-4096).
 - [x] Endpoints `/auth/me` y `/auth/refresh`.
 
+**OAuth 2.0 extendido (post-Sprint 1)**
+- [x] Registro de clientes con `redirect_uri` y scopes permitidos.
+- [x] Authorization Code + PKCE (`/oauth/authorize`, un solo uso, S256).
+- [x] Refresh tokens opacos con rotación y detección de reutilización.
+- [x] Revocación (RFC 7009) e introspección (RFC 7662).
+- [x] Discovery (RFC 8414), OpenID Discovery y JWKS (RFC 7517).
+- [x] Cliente Kotlin: flujo PKCE en navegador externo + revocación al cerrar sesión.
+
 **Frontend móvil**
 - [x] GitFlow con ramificación restrictiva (`main`/`develop`/`feature`/`release`/`hotfix`).
 - [x] Arquitectura limpia por capas (`domain` / `data` / `presentation` / `core`).
@@ -28,8 +36,8 @@
 - [x] Sin tráfico cleartext salvo el emulador de desarrollo.
 
 **Pruebas**
-- [x] 14 pruebas backend en verde.
-- [x] 9 pruebas unitarias móviles escritas (requieren SDK para ejecutar).
+- [x] 46 pruebas backend en verde (14 de Sprint 1 + 32 del flujo OAuth).
+- [x] Pruebas unitarias móviles de repositorio y PKCE.
 
 ## Definition of Done
 

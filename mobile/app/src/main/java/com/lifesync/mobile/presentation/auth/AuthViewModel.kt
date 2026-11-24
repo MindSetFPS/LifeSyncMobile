@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifesync.mobile.core.result.Resource
 import com.lifesync.mobile.domain.repository.AuthRepository
+import com.lifesync.mobile.domain.usecase.CompleteAuthorizationUseCase
 import com.lifesync.mobile.domain.usecase.LoginUseCase
 import com.lifesync.mobile.domain.usecase.RegisterUseCase
+import com.lifesync.mobile.domain.usecase.StartAuthorizationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +23,8 @@ import javax.inject.Inject
 class AuthViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase,
     private val registerUseCase: RegisterUseCase,
+    private val startAuthorizationUseCase: StartAuthorizationUseCase,
+    private val completeAuthorizationUseCase: CompleteAuthorizationUseCase,
     authRepository: AuthRepository,
 ) : ViewModel() {
     val isAuthenticated = authRepository.isAuthenticated
@@ -37,6 +41,43 @@ class AuthViewModel @Inject constructor(
 
     fun login() = submit(register = false)
     fun register() = submit(register = true)
+
+    /** Abre el navegador externo con el flujo Authorization Code + PKCE. */
+    fun startAuthorization() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            when (val result = startAuthorizationUseCase()) {
+                is Resource.Success -> {
+                    _uiState.update { it.copy(isLoading = false, errorMessage = null) }
+                    _events.tryEmit(AuthEvent.LaunchAuthorization(result.data.url))
+                }
+                is Resource.Error -> _uiState.update {
+                    it.copy(isLoading = false, errorMessage = result.message)
+                }
+                Resource.Loading -> Unit
+            }
+        }
+    }
+
+    /** Llega desde el deep link `com.lifesync.mobile://oauth2callback`. */
+    fun onAuthorizationRedirect(code: String, state: String?) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            when (val result = completeAuthorizationUseCase(code, state)) {
+                is Resource.Success -> _uiState.update {
+                    it.copy(isLoading = false, errorMessage = null)
+                }
+                is Resource.Error -> _uiState.update {
+                    it.copy(isLoading = false, errorMessage = result.message)
+                }
+                Resource.Loading -> Unit
+            }
+        }
+    }
+
+    fun onAuthorizationFailed(message: String) {
+        _uiState.update { it.copy(isLoading = false, errorMessage = message) }
+    }
 
     private fun submit(register: Boolean) {
         viewModelScope.launch {

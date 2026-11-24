@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,6 +29,7 @@ fun LoginScreen(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onLogin: () -> Unit,
+    onAuthorizeWithBrowser: () -> Unit,
     onNavigateToRegister: () -> Unit,
 ) {
     Column(
@@ -67,6 +69,14 @@ fun LoginScreen(
         }
         Button(onClick = onLogin, enabled = !uiState.isLoading, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.login_button))
+        }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(
+            onClick = onAuthorizeWithBrowser,
+            enabled = !uiState.isLoading,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.login_oauth_button))
         }
         TextButton(onClick = onNavigateToRegister) {
             Text(stringResource(R.string.need_account))

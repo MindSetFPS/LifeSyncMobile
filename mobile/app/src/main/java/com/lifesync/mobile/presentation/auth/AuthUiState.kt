@@ -12,6 +12,7 @@ data class AuthUiState(
 
 sealed interface AuthEvent {
     data object NavigateToLogin : AuthEvent
+    data class LaunchAuthorization(val url: String) : AuthEvent
 }
 
 data class HomeUiState(

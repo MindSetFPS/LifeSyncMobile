@@ -44,7 +44,45 @@
 - Mensajes de error genéricos ante credenciales inválidas (evita user enumeration).
 - Conflicto de registro devuelve 409 sin revelar si la cuenta está activa.
 
-## 6. Pendiente para sprints Posteriores
+## 6. OAuth 2.0 endurecido
 
-- Revocar refresh tokens (lista negra con `jti`), rate limiting, MFA y biometría para
-  desbloquear el historial médico, certificados pinning (Certificate Pinning).
+- **Clientes registrados**: la tabla `oauth_clients` define `redirect_uri`
+  permitidos y scopes autorizados. `redirect_uri` se compara de forma
+  **exacta** (no por prefijo), lo que bloquea redirecciones abiertas.
+- **Clientes públicos vs confidenciales**: la app nativa es un cliente
+  público sin secreto y se apoya en PKCE. Los clientes de servidor guardan
+  `client_secret` solo como hash bcrypt y pueden autenticarse con HTTP Basic
+  (RFC 7617) o en el cuerpo.
+- **Authorization Code + PKCE**: `code_challenge_method` debe ser `S256`;
+  el código es de un solo uso, expira en 60 s y está atado a `client_id` y
+  `redirect_uri`. El `code_verifier` nunca viaja en el redirect.
+- **Anti-CSRF**: el estado del flujo (`client_id`, `redirect_uri`, `scope`,
+  PKCE, `state`) viaja firmado en una cookie `HttpOnly` + `SameSite=Lax`; el
+  POST de consentimiento solo acepta el estado de esa cookie.
+- **Navegador externo**: el flujo se abre con `Intent.ACTION_VIEW`, nunca en
+  un WebView (RFC 8252 §8.12), para que el usuario vea el dominio real.
+- **Rotación de refresh tokens**: los tokens son opacos, se persisten solo
+  como hash SHA-256. Reutilizar un token ya rotado **revoca la familia
+  completa** (detección de robo, RFC 6819 §5.2.2.3).
+- **Revocación real**: `POST /auth/revoke` (RFC 7009) invalida los refresh
+  tokens pendientes; el logout de la app lo invoca y luego limpia el Keystore.
+- **Introspección**: `POST /auth/introspect` (RFC 7662) permite a un recurso
+  verificar el token y obtener `scope`/`client_id`.
+- **Scopes**: el servidor valida los scopes solicitados contra la lista del
+  cliente y los emite en el claim `scope` del JWT; un cliente no puede pedir
+  un scope que no tenga autorizado (`invalid_scope`). Los endpoints de recurso
+  de Sprint 2 podrán exigirlos con la dependencia `require_scope`.
+- **Descubrimiento**: `/.well-known/oauth-authorization-server` (RFC 8414) y
+  `/.well-known/jwks.json` (RFC 7517) publican únicamente material público.
+  Los JWT llevan `kid` para permitir la rotación de llaves sin romper clientes.
+- **Respuestas de error**: RFC 6749 §5.2 (`error`, `error_description`) con
+  `Cache-Control: no-store` y `Pragma: no-cache`.
+
+## 7. Pendiente para sprints posteriores
+
+- Rate limiting y bloqueo por intentos fallidos (recomendado en `/auth/token`).
+- MFA / biometría para desbloquear el historial médico.
+- Certificate pinning.
+- `id_token` (OpenID Connect) si se requiere identidad federada.
+- Persistir el `state` PKCE cifrado en disco para sobrevivir al cierre del
+  proceso; hoy vive solo en memoria y el flujo se reinicia.

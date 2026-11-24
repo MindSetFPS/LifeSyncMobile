@@ -32,6 +32,7 @@ fun AppNavigation(
     isAuthenticated: Boolean,
     authViewModel: AuthViewModel,
     homeViewModel: HomeViewModel,
+    onLaunchAuthorization: (String) -> Unit,
 ) {
     val navController: NavHostController = rememberNavController()
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
@@ -41,6 +42,7 @@ fun AppNavigation(
         authViewModel.events.collect { event ->
             when (event) {
                 AuthEvent.NavigateToLogin -> navController.navigate(LOGIN)
+                is AuthEvent.LaunchAuthorization -> onLaunchAuthorization(event.url)
             }
         }
     }
@@ -65,6 +67,7 @@ fun AppNavigation(
                     onEmailChange = authViewModel::onEmailChange,
                     onPasswordChange = authViewModel::onPasswordChange,
                     onLogin = authViewModel::login,
+                    onAuthorizeWithBrowser = authViewModel::startAuthorization,
                     onNavigateToRegister = { navController.navigate(REGISTER) },
                 )
             }

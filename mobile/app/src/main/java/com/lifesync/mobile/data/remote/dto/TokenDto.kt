@@ -7,12 +7,18 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class TokenDto(
     @SerialName("access_token") val accessToken: String,
-    @SerialName("refresh_token") val refreshToken: String,
+    @SerialName("refresh_token") val refreshToken: String? = null,
     @SerialName("token_type") val tokenType: String,
     @SerialName("expires_in") val expiresIn: Int,
     val scope: String? = null,
 ) {
-    fun toDomain(): AuthToken = AuthToken(accessToken, refreshToken, tokenType, expiresIn)
+    fun toDomain(): AuthToken = AuthToken(
+        accessToken = accessToken,
+        refreshToken = refreshToken ?: "",
+        tokenType = tokenType,
+        expiresIn = expiresIn,
+        scope = scope ?: "",
+    )
 }
 
 @Serializable
