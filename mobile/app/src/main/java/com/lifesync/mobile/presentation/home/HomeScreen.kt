@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -21,6 +22,7 @@ import com.lifesync.mobile.presentation.auth.HomeUiState
 @Composable
 fun HomeScreen(
     uiState: HomeUiState,
+    onOpenPatientProfile: () -> Unit,
     onLogout: () -> Unit,
     onRetry: () -> Unit,
 ) {
@@ -47,6 +49,18 @@ fun HomeScreen(
         }
 
         Spacer(Modifier.height(32.dp))
-        Button(onClick = onLogout) { Text(stringResource(R.string.logout_button)) }
+        Button(
+            onClick = onOpenPatientProfile,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.patient_profile_button))
+        }
+        Spacer(Modifier.height(8.dp))
+        Button(
+            onClick = onLogout,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.logout_button))
+        }
     }
 }

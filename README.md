@@ -174,6 +174,9 @@ ocupado, se puede redirigir la compilación sin editar código:
 ./gradlew assembleDebug -Plifesync.apiBaseUrl=http://10.0.2.2:8001/api/v1/
 ```
 
+Guía paso a paso para levantar el backend y correr la app en el emulador:
+[`docs/run_app.md`](docs/run_app.md).
+
 ## GitFlow
 
 Consultar `docs/gitflow.md`. Rama activa de trabajo:

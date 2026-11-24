@@ -8,6 +8,7 @@ import com.lifesync.mobile.data.local.SecureTokenStorage
 import com.lifesync.mobile.data.remote.AuthAuthenticator
 import com.lifesync.mobile.data.remote.AuthInterceptor
 import com.lifesync.mobile.data.remote.service.AuthApiService
+import com.lifesync.mobile.data.remote.service.HealthApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -38,7 +39,8 @@ object AppModule {
     @Singleton
     @Named("refresh")
     fun provideRefreshApi(json: Json): AuthApiService =
-        createApi(json, OkHttpClient.Builder().build())
+        createRetrofit(json, OkHttpClient.Builder().build())
+            .create(AuthApiService::class.java)
 
     @Provides
     @Singleton
@@ -49,29 +51,43 @@ object AppModule {
 
     @Provides
     @Singleton
-    @Named("auth")
-    fun provideAuthApi(
-        json: Json,
+    @Named("authenticated")
+    fun provideAuthenticatedClient(
         tokenStorage: TokenStorage,
         authenticator: AuthAuthenticator,
-    ): AuthApiService {
+    ): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC
             else HttpLoggingInterceptor.Level.NONE
         }
-        val client = OkHttpClient.Builder()
+        return OkHttpClient.Builder()
             .addInterceptor(AuthInterceptor(tokenStorage))
             .authenticator(authenticator)
             .addInterceptor(logging)
             .build()
-        return createApi(json, client)
     }
 
-    private fun createApi(json: Json, client: OkHttpClient): AuthApiService =
+    @Provides
+    @Singleton
+    fun provideAuthenticatedRetrofit(
+        json: Json,
+        @Named("authenticated") client: OkHttpClient,
+    ): Retrofit = createRetrofit(json, client)
+
+    @Provides
+    @Singleton
+    fun provideAuthApi(retrofit: Retrofit): AuthApiService =
+        retrofit.create(AuthApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideHealthApi(retrofit: Retrofit): HealthApiService =
+        retrofit.create(HealthApiService::class.java)
+
+    private fun createRetrofit(json: Json, client: OkHttpClient): Retrofit =
         Retrofit.Builder()
             .baseUrl(BuildConfig.API_BASE_URL)
             .client(client)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
-            .create(AuthApiService::class.java)
 }

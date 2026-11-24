@@ -12,4 +12,7 @@
     <string name="have_account">¿Ya tienes cuenta? Inicia sesión</string>
     <string name="logout_button">Cerrar sesión</string>
     <string name="profile_title">Perfil</string>
+    <string name="patient_profile_title">Perfil clínico</string>
+    <string name="patient_profile_button">Completar perfil clínico</string>
+    <string name="save_profile_button">Guardar datos clínicos</string>
 </resources>

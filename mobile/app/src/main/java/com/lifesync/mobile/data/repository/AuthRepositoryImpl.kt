@@ -15,13 +15,12 @@ import retrofit2.HttpException
 import java.io.IOException
 import java.security.SecureRandom
 import javax.inject.Inject
-import javax.inject.Named
 import javax.inject.Singleton
 
 /** Implementación de dominio: consume la API de forma asíncrona y persiste el JWT. */
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
-    @Named("auth") private val api: AuthApiService,
+    private val api: AuthApiService,
     private val tokenStorage: TokenStorage,
     private val authorizationRequestStore: AuthorizationRequestStore,
     private val secureRandom: SecureRandom = SecureRandom(),
