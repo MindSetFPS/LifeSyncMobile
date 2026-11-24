@@ -1,4 +1,4 @@
-"""Servicio de autenticación: orquesta repositorio, hashing y JWT."""
+"""Servicio de autenticación: orquesta repositorio, hashing y emisión de tokens."""
 
 from __future__ import annotations
 
@@ -8,7 +8,9 @@ from app.core import security
 from app.core.config import settings
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import Token, UserCreate
+from app.schemas.auth import UserCreate
+from app.schemas.oauth import TokenResponse
+from app.services.token_service import TokenService
 
 
 class EmailAlreadyExists(Exception):
@@ -22,6 +24,7 @@ class InvalidCredentials(Exception):
 class AuthService:
     def __init__(self, session: AsyncSession) -> None:
         self._repo = UserRepository(session)
+        self._tokens = TokenService(session)
 
     async def register(self, data: UserCreate) -> User:
         if await self._repo.get_by_email(data.email):
@@ -40,20 +43,13 @@ class AuthService:
             raise InvalidCredentials("Credenciales inválidas")
         return user
 
-    @staticmethod
-    def issue_tokens(user: User) -> Token:
-        return Token(
-            access_token=security.create_access_token(subject=user.id),
-            refresh_token=security.create_refresh_token(subject=user.id),
-            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        )
+    async def issue_tokens(
+        self, user: User, *, client_id: str, scope: str
+    ) -> TokenResponse:
+        return await self._tokens.issue(user, client_id=client_id, scope=scope)
 
-    async def refresh(self, refresh_token: str) -> Token:
-        try:
-            payload = security.decode_token(refresh_token, expected_type="refresh")
-        except security.TokenError as exc:
-            raise InvalidCredentials("Refresh token inválido") from exc
-        user = await self._repo.get_by_id(payload.sub)
-        if user is None or not user.is_active:
-            raise InvalidCredentials("Usuario no encontrado o inactivo")
-        return self.issue_tokens(user)
+    async def refresh(self, refresh_token: str, *, client_id: str | None) -> TokenResponse:
+        return await self._tokens.rotate(refresh_token, client_id=client_id)
+
+
+__all__ = ["AuthService", "EmailAlreadyExists", "InvalidCredentials"]

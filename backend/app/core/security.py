@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import hmac
+import secrets
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -41,6 +43,29 @@ class TokenPayload:
     jti: str
     type: str
     scope: str = ""
+    client_id: str = ""
+    iss: str = ""
+
+
+def sha256_hex(value: str) -> str:
+    """Hash SHA-256 en hexadecimal (códigos y tokens nunca se guardan en claro)."""
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def verify_pkce(
+    code_verifier: str, code_challenge: str, method: str
+) -> bool:
+    """Verifica el valor PKCE según RFC 7636 §4.6."""
+    if not 43 <= len(code_verifier) <= 128:
+        return False
+    if method == "S256":
+        computed = (
+            base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode("ascii")).digest())
+            .rstrip(b"=")
+            .decode("ascii")
+        )
+        return hmac.compare_digest(computed, code_challenge)
+    return False
 
 
 def _prepare_password(password: str) -> bytes:
@@ -101,11 +126,24 @@ def _load_public_key() -> str:
     return settings.JWT_PUBLIC_KEY_PATH.read_text(encoding="utf-8")
 
 
+def _sign(claims: dict[str, Any]) -> str:
+    """Firma el JWT exponiendo el `kid` para que JWKS resuelva la llave pública."""
+    return jwt.encode(
+        claims,
+        _load_private_key(),
+        algorithm=settings.JWT_ALGORITHM,
+        headers={"kid": settings.JWT_KEY_ID, "typ": "JWT"},
+    )
+
+
 def create_access_token(
     subject: str,
     *,
     expires_delta: timedelta | None = None,
     extra_claims: dict[str, Any] | None = None,
+    scope: str | None = None,
+    client_id: str | None = None,
+    audience: str | None = None,
 ) -> str:
     """Crea un access token JWT firmado (RS256)."""
     now = datetime.now(UTC)
@@ -119,11 +157,16 @@ def create_access_token(
         "exp": expire,
         "jti": str(uuid.uuid4()),
         "type": "access",
-        "scope": "read write",
+        "scope": scope or settings.OAUTH_DEFAULT_SCOPE,
+        "iss": settings.OAUTH_ISSUER,
     }
+    if client_id:
+        claims["client_id"] = client_id
+    if audience:
+        claims["aud"] = audience
     if extra_claims:
         claims.update(extra_claims)
-    return jwt.encode(claims, _load_private_key(), algorithm=settings.JWT_ALGORITHM)
+    return _sign(claims)
 
 
 def create_refresh_token(
@@ -140,25 +183,15 @@ def create_refresh_token(
         "exp": expire,
         "jti": str(uuid.uuid4()),
         "type": "refresh",
-        "scope": "refresh",
+        "scope": "offline_access",
+        "iss": settings.OAUTH_ISSUER,
     }
-    return jwt.encode(claims, _load_private_key(), algorithm=settings.JWT_ALGORITHM)
+    return _sign(claims)
 
 
 def decode_token(token: str, *, expected_type: str = "access") -> TokenPayload:
-    """Verifica firma, expiración y tipo; devuelve el payload tipado."""
-    try:
-        raw = jwt.decode(
-            token,
-            _load_public_key(),
-            algorithms=[settings.JWT_ALGORITHM],
-            options={"require": ["exp", "iat", "sub", "jti"]},
-        )
-    except jwt.PyJWTError as exc:
-        raise TokenError("Token inválido o expirado") from exc
-
-    if raw.get("type") != expected_type:
-        raise TokenError(f"Tipo de token inesperado: {raw.get('type')}")
+    """Verifica firma, expiración, emisor y tipo; devuelve el payload tipado."""
+    raw = decode_token_claims(token, expected_type=expected_type)
 
     return TokenPayload(
         sub=str(raw["sub"]),
@@ -167,4 +200,60 @@ def decode_token(token: str, *, expected_type: str = "access") -> TokenPayload:
         jti=str(raw["jti"]),
         type=str(raw["type"]),
         scope=str(raw.get("scope", "")),
+        client_id=str(raw.get("client_id", "")),
+        iss=str(raw.get("iss", "")),
     )
+
+
+def decode_token_claims(
+    token: str, *, expected_type: str | None = None
+) -> dict[str, Any]:
+    """Verifica firma, expiración y emisor; devuelve los claims crudos.
+
+    `expected_type=None` omite la comprobación del claim `type`, necesario para
+    tokens internos (por ejemplo el estado firmado del flujo de autorización).
+    """
+    try:
+        raw = jwt.decode(
+            token,
+            _load_public_key(),
+            algorithms=[settings.JWT_ALGORITHM],
+            issuer=settings.OAUTH_ISSUER,
+            options={
+                "require": ["exp", "iat", "sub", "jti", "iss"],
+                "verify_aud": False,
+            },
+        )
+    except jwt.PyJWTError as exc:
+        raise TokenError("Token inválido o expirado") from exc
+
+    if expected_type is not None and raw.get("type") != expected_type:
+        raise TokenError(f"Tipo de token inesperado: {raw.get('type')}")
+
+    return dict(raw)
+
+
+def public_key_pem() -> str:
+    """Llave pública PEM expuesta por JWKS (nunca la privada)."""
+    return _load_public_key()
+
+
+def generate_token_handle() -> str:
+    """Identificador opaco e impredecible para códigos y refresh tokens."""
+    return secrets.token_urlsafe(48)
+
+
+__all__ = [
+    "TokenError",
+    "TokenPayload",
+    "create_access_token",
+    "create_refresh_token",
+    "decode_token",
+    "ensure_rsa_keypair",
+    "generate_token_handle",
+    "hash_password",
+    "public_key_pem",
+    "sha256_hex",
+    "verify_password",
+    "verify_pkce",
+]

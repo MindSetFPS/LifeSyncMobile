@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import security
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.oauth import parse_basic_authorization
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.services.auth_service import InvalidCredentials
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=settings.OAUTH_TOKEN_URL)
 
@@ -41,4 +41,18 @@ async def get_current_user(
     return user
 
 
+def client_credentials_from_request(request: Request) -> tuple[str | None, str | None]:
+    """Credenciales de cliente desde `Authorization: Basic` (RFC 7617)."""
+    return parse_basic_authorization(request.headers.get("Authorization")) or (None, None)
+
+
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+__all__ = [
+    "CurrentUser",
+    "client_credentials_from_request",
+    "credentials_exception",
+    "get_current_user",
+    "oauth2_scheme",
+]

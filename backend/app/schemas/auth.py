@@ -29,8 +29,8 @@ class Token(BaseModel):
     """Respuesta OAuth 2.0: bearer + refresh token."""
 
     access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
+    refresh_token: str | None = None
+    token_type: str = "Bearer"
     expires_in: int
     scope: str = "read write"
 

@@ -71,10 +71,10 @@ class DatabaseManager:
         """Crea el esquema. Requiere que los modelos estén importados."""
         if not self._initialized:
             self.init()
-        from app.models.user import User  # noqa: F401  (registro de metadatos)
+        from app import models  # noqa: F401  (registro de todos los metadatos)
 
         async with self.engine.begin() as conn:
-            await conn.run_sync(User.metadata.create_all)
+            await conn.run_sync(models.Base.metadata.create_all)
 
     async def dispose(self) -> None:
         if self._initialized:

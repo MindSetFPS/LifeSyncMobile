@@ -33,14 +33,24 @@ class Settings(BaseSettings):
     JWT_PRIVATE_KEY_PATH: Path = Path("keys/private_key.pem")
     JWT_PUBLIC_KEY_PATH: Path = Path("keys/public_key.pem")
     JWT_ALGORITHM: str = "RS256"
+    JWT_KEY_ID: str = "lifesync-rs256-1"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Parámetros de hashing de contraseñas (nunca se guarda texto plano).
     BCRYPT_ROUNDS: int = 12
 
-    # OAuth 2.0
+    # OAuth 2.0 / OpenID metadata
+    OAUTH_ISSUER: str = "http://localhost:8000"
     OAUTH_TOKEN_URL: str = "/api/v1/auth/token"
+    OAUTH_AUTHORIZE_URL: str = "/api/v1/oauth/authorize"
+    OAUTH_SUPPORTED_SCOPES: str = "read write offline_access"
+    OAUTH_DEFAULT_SCOPE: str = "read write"
+    OAUTH_AUTHORIZATION_CODE_EXPIRE_SECONDS: int = 60
+
+    # Registro de clientes OAuth (identificador público del cliente móvil).
+    OAUTH_SEED_CLIENT_ID: str = "lifesync-android"
+    OAUTH_SEED_CLIENT_REDIRECT_URIS: str = "com.lifesync.mobile://oauth2callback"
 
 
 @lru_cache
