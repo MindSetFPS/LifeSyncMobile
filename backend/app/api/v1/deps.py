@@ -25,14 +25,21 @@ credentials_exception = HTTPException(
 
 
 async def get_current_user(
+    request: Request,
     token: Annotated[str, Depends(oauth2_scheme)],
     session: Annotated[AsyncSession, Depends(get_db)],
 ) -> User:
-    """Valida el JWT RS256 y devuelve el usuario autenticado."""
-    try:
-        payload = security.decode_token(token, expected_type="access")
-    except security.TokenError as exc:
-        raise credentials_exception from exc
+    """Devuelve el usuario autenticado.
+
+    Reutiliza el payload que ya validó `BearerAuthMiddleware`; si la ruta se
+    invoca sin middleware (pruebas unitarias), vuelve a validar el token.
+    """
+    payload = getattr(request.state, "token_payload", None)
+    if payload is None:
+        try:
+            payload = security.decode_token(token, expected_type="access")
+        except security.TokenError as exc:
+            raise credentials_exception from exc
 
     repo = UserRepository(session)
     user = await repo.get_by_id(payload.sub)

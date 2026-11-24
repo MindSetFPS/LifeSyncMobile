@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     OAUTH_SEED_CLIENT_ID: str = "lifesync-android"
     OAUTH_SEED_CLIENT_REDIRECT_URIS: str = "com.lifesync.mobile://oauth2callback"
 
+    # Exportación del historial clínico de emergencia.
+    HEALTH_EXPORT_TTL_MINUTES: int = 60
+
 
 @lru_cache
 def get_settings() -> Settings:

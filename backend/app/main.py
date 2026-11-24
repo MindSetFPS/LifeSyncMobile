@@ -9,6 +9,7 @@ from fastapi import FastAPI
 
 from app.api.v1.router import api_router
 from app.api.well_known import router as well_known_router
+from app.core.auth_middleware import BearerAuthMiddleware
 from app.core.config import settings
 from app.core.database import database
 from app.core.oauth import OAuthError, oauth_error_handler
@@ -57,6 +58,7 @@ app = FastAPI(
     docs_url="/docs",
 )
 
+app.add_middleware(BearerAuthMiddleware)
 app.add_exception_handler(OAuthError, oauth_error_handler)
 app.include_router(well_known_router)
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)

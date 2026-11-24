@@ -39,8 +39,17 @@
 
 ## 5. Protección de la API
 
-- `OAuth2PasswordBearer` + dependencia `get_current_user`: rutas protegidas devuelven
-  401 con `WWW-Authenticate: Bearer`.
+- `BearerAuthMiddleware` valida firma, expiración y `type=access` de toda ruta
+  bajo `/api/v1` antes de llegar al router. Las rutas ausentes o con token
+  inválido devuelven 401 con `WWW-Authenticate: Bearer`.
+- Lista blanca del middleware: `/health`, documentación, `/.well-known/*`,
+  `/api/v1/auth/{register,token,refresh,revoke,introspect}` y
+  `/api/v1/oauth/authorize` (validan sus propias credenciales o cookies).
+- `get_current_user` reutiliza el payload validado por el middleware y carga el
+  usuario activo; si se invoca sin middleware (pruebas unitarias) valida el
+  token con `OAuth2PasswordBearer` como respaldo.
+- La propiedad del recurso (anti-IDOR) se verifica en los repositorios, que
+  filtran siempre por el `user_id` del token; un recurso ajeno responde 404.
 - Mensajes de error genéricos ante credenciales inválidas (evita user enumeration).
 - Conflicto de registro devuelve 409 sin revelar si la cuenta está activa.
 
