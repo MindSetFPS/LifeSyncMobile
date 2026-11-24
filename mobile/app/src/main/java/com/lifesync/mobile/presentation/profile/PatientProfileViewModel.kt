@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @HiltViewModel
@@ -24,8 +26,9 @@ class PatientProfileViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    private val datePattern = Regex("""\d{4}-\d{2}-\d{2}""")
+    private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
     private val phonePattern = Regex("""^\+[1-9]\d{1,14}$""")
+    private val emailPattern = Regex("""^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$""")
 
     fun load() {
         viewModelScope.launch {
@@ -85,16 +88,19 @@ class PatientProfileViewModel @Inject constructor(
     fun saveProfile() {
         val form = _uiState.value.profile
         val height = parsePositive(form.heightCm)
-        if (form.heightCm.isNotBlank() && height == null) {
-            return fail("Estatura inválida")
+        if (form.heightCm.isNotBlank() && (height == null || height > 300)) {
+            return fail("Estatura inválida (0 < cm ≤ 300)")
         }
         val weight = parsePositive(form.weightKg)
-        if (form.weightKg.isNotBlank() && weight == null) {
-            return fail("Peso inválido")
+        if (form.weightKg.isNotBlank() && (weight == null || weight > 1000)) {
+            return fail("Peso inválido (0 < kg ≤ 1000)")
         }
         val birthDate = form.dateOfBirth.trim()
-        if (birthDate.isNotEmpty() && !datePattern.matches(birthDate)) {
+        if (birthDate.isNotEmpty() && parseDate(birthDate) == null) {
             return fail("Fecha de nacimiento inválida (AAAA-MM-DD)")
+        }
+        requireLength(form.chronicConditions, "Condiciones crónicas", 1000)?.let {
+            return fail(it)
         }
 
         viewModelScope.launch {
@@ -123,6 +129,9 @@ class PatientProfileViewModel @Inject constructor(
         if (form.allergenName.isBlank()) {
             return fail("El alérgeno es obligatorio")
         }
+        requireLength(form.allergenName, "Alérgeno", 120)?.let { return fail(it) }
+        requireLength(form.reaction, "Reacción", 255)?.let { return fail(it) }
+        requireLength(form.notes, "Notas", 500)?.let { return fail(it) }
         viewModelScope.launch {
             when (
                 val result = save {
@@ -167,14 +176,28 @@ class PatientProfileViewModel @Inject constructor(
         if (form.name.isBlank() || form.dosage.isBlank() || form.frequencyText.isBlank()) {
             return fail("Completa nombre, dosis y frecuencia")
         }
-        if (!datePattern.matches(form.startDate.trim())) {
+        requireLength(form.name, "Nombre", 120)?.let { return fail(it) }
+        requireLength(form.activeIngredient, "Principio activo", 120)?.let { return fail(it) }
+        requireLength(form.dosage, "Dosis", 60)?.let { return fail(it) }
+        requireLength(form.frequencyText, "Frecuencia", 120)?.let { return fail(it) }
+        requireLength(form.prescriberName, "Prescriptor", 120)?.let { return fail(it) }
+        requireLength(form.indication, "Indicación", 255)?.let { return fail(it) }
+
+        val start = parseDate(form.startDate)
+        if (start == null) {
             return fail("Fecha de inicio inválida (AAAA-MM-DD)")
         }
-        if (form.endDate.isNotBlank() && !datePattern.matches(form.endDate.trim())) {
-            return fail("Fecha de fin inválida (AAAA-MM-DD)")
+        val end = form.endDate.nullIfBlank()?.let {
+            parseDate(it) ?: return fail("Fecha de fin inválida (AAAA-MM-DD)")
         }
-        if (form.isControlled && form.prescriberName.isBlank()) {
-            return fail("Un medicamento controlado exige prescriptor")
+        if (end != null && end.isBefore(start)) {
+            return fail("La fecha de fin no puede ser anterior a la de inicio")
+        }
+        if (form.isControlled) {
+            requireLength(form.controlledSchedule, "Programa", 20)?.let { return fail(it) }
+            if (form.prescriberName.isBlank()) {
+                return fail("Un medicamento controlado exige prescriptor")
+            }
         }
 
         viewModelScope.launch {
@@ -234,12 +257,30 @@ class PatientProfileViewModel @Inject constructor(
         ) {
             return fail("Completa nombre, parentesco y teléfono")
         }
+        requireLength(form.fullName, "Nombre", 120)?.let { return fail(it) }
+        requireLength(form.relationship, "Parentesco", 60)?.let { return fail(it) }
+        requireLength(form.phonePrimary, "Teléfono", 20)?.let { return fail(it) }
         if (!phonePattern.matches(form.phonePrimary.trim())) {
             return fail("Teléfono inválido: usa formato E.164 (ej. +5215555555555)")
         }
+        val secondary = form.phoneSecondary.nullIfBlank()
+        if (secondary != null) {
+            requireLength(secondary, "Teléfono alterno", 20)?.let { return fail(it) }
+            if (!phonePattern.matches(secondary)) {
+                return fail("Teléfono alterno inválido: usa formato E.164")
+            }
+        }
+        val email = form.email.nullIfBlank()
+        if (email != null) {
+            requireLength(email, "Correo", 320)?.let { return fail(it) }
+            if (!emailPattern.matches(email)) {
+                return fail("Correo electrónico inválido")
+            }
+        }
+        requireLength(form.notes, "Notas", 255)?.let { return fail(it) }
         val priority = form.priority.trim().toIntOrNull()
-        if (priority == null || priority < 0) {
-            return fail("Prioridad inválida (entero mayor o igual a 0)")
+        if (priority == null || priority !in 0..99) {
+            return fail("Prioridad inválida (entero entre 0 y 99)")
         }
 
         viewModelScope.launch {
@@ -250,8 +291,8 @@ class PatientProfileViewModel @Inject constructor(
                             fullName = form.fullName.trim(),
                             relationship = form.relationship.trim(),
                             phonePrimary = form.phonePrimary.trim(),
-                            phoneSecondary = form.phoneSecondary.nullIfBlank(),
-                            email = form.email.nullIfBlank(),
+                            phoneSecondary = secondary,
+                            email = email,
                             priority = priority,
                             notes = form.notes.nullIfBlank(),
                         ),
@@ -330,6 +371,16 @@ class PatientProfileViewModel @Inject constructor(
         raw.trim().replace(',', '.').takeIf { it.isNotEmpty() }
             ?.toDoubleOrNull()
             ?.takeIf { it > 0 }
+
+    private fun parseDate(raw: String): LocalDate? =
+        runCatching { LocalDate.parse(raw.trim(), dateFormatter) }.getOrNull()
+
+    private fun requireLength(value: String, field: String, max: Int): String? =
+        if (value.trim().length > max) {
+            "$field no puede superar $max caracteres"
+        } else {
+            null
+        }
 
     private fun String.nullIfBlank(): String? =
         trim().takeIf { it.isNotEmpty() }
