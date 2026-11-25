@@ -26,6 +26,9 @@ kotlin-compiler-daemon*.log
 .vscode/
 .DS_Store
 
+# Reportes del CI local / SAST
+reports/
+
 # AI Agents
 
 .commandcode/
