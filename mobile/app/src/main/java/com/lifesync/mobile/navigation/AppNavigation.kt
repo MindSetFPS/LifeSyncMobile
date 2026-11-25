@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import com.lifesync.mobile.presentation.alerts.AlertsViewModel
 import com.lifesync.mobile.presentation.auth.AuthEvent
 import com.lifesync.mobile.presentation.auth.AuthViewModel
 import com.lifesync.mobile.presentation.auth.login.LoginScreen
@@ -34,6 +35,7 @@ fun AppNavigation(
     isAuthenticated: Boolean,
     authViewModel: AuthViewModel,
     homeViewModel: HomeViewModel,
+    alertsViewModel: AlertsViewModel,
     onLaunchAuthorization: (String) -> Unit,
 ) {
     val navController: NavHostController = rememberNavController()
@@ -56,6 +58,7 @@ fun AppNavigation(
             popUpTo(from) { inclusive = true }
             launchSingleTop = true
         }
+        if (isAuthenticated) alertsViewModel.syncSchedules()
     }
 
     NavHost(

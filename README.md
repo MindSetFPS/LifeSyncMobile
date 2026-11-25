@@ -52,7 +52,7 @@ autenticación remota asíncrono con persistencia local cifrada por hardware.
         o Validación sintáctica en formularios locales del teléfono antes del envío para optimizar rendimiento.
         o Mitigación obligatoria de vulnerabilidades de Referencia Directa Insegura a Objetos (IDOR) en el servidor: la nube debe validar que el request.auth.uid sea el legítimo dueño del registro médico que se intenta leer o editar.
 
-Semana 3: Sprint 3 – Gestión de Alertas, Sensores Nativos y Manejo de Estados (Cubre las Unidades I, II y III)
+# Semana 3: Sprint 3 – Gestión de Alertas, Sensores Nativos y Manejo de Estados (Cubre las Unidades I, II y III)
 
 Meta del Sprint: Enlazar las capacidades de hardware del dispositivo para la atención de incidentes mediante máquinas de estados y optimizar el diseño lógico de software.
 

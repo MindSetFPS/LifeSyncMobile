@@ -15,4 +15,7 @@
     <string name="patient_profile_title">Perfil clínico</string>
     <string name="patient_profile_button">Completar perfil clínico</string>
     <string name="save_profile_button">Guardar datos clínicos</string>
+    <string name="alert_channel_name">Recordatorios de medicamentos</string>
+    <string name="alert_channel_description">Alertas locales de medicamentos críticos</string>
+    <string name="alert_medication_title">Recordatorio de medicamento</string>
 </resources>
