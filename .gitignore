@@ -25,3 +25,8 @@ kotlin-compiler-daemon*.log
 # IDE / SO
 .vscode/
 .DS_Store
+
+# AI Agents
+
+.commandcode/
+backend/.coverage
