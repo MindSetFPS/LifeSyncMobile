@@ -1,17 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">LifeSync Mobile</string>
+    <string name="app_tagline">Asistencia e historial médico de emergencia</string>
     <string name="login_title">Bienvenido a LifeSync</string>
+    <string name="login_subtitle">Ingresa para acceder a tu historial médico seguro.</string>
     <string name="email_hint">Correo electrónico</string>
     <string name="password_hint">Contraseña</string>
     <string name="full_name_hint">Nombre completo</string>
     <string name="login_button">Iniciar sesión</string>
     <string name="login_oauth_button">Autorizar con navegador (OAuth 2.0)</string>
+    <string name="register_title">Crea tu cuenta</string>
+    <string name="register_subtitle">Registra tus datos para proteger tu información médica.</string>
     <string name="register_button">Crear cuenta</string>
     <string name="need_account">¿No tienes cuenta? Regístrate</string>
     <string name="have_account">¿Ya tienes cuenta? Inicia sesión</string>
     <string name="logout_button">Cerrar sesión</string>
     <string name="profile_title">Perfil</string>
+    <string name="home_greeting">Hola,</string>
+    <string name="verified_account">Cuenta protegida</string>
+    <string name="profile_info_title">Información de perfil</string>
+    <string name="profile_name_label">Nombre completo</string>
+    <string name="profile_email_label">Correo electrónico</string>
+    <string name="home_actions_title">Acciones rápidas</string>
+    <string name="action_profile_subtitle">Datos médicos, alergias y contactos</string>
+    <string name="action_permissions_subtitle">Cámara y ubicación</string>
+    <string name="retry_button">Reintentar</string>
+    <string name="loading">Cargando…</string>
+
     <string name="patient_profile_title">Perfil clínico</string>
     <string name="patient_profile_button">Completar perfil clínico</string>
     <string name="save_profile_button">Guardar datos clínicos</string>
@@ -21,6 +36,7 @@
     <string name="back">Volver</string>
     <string name="home_permissions_button">Permisos de hardware</string>
     <string name="permissions_title">Permisos de hardware</string>
+    <string name="permissions_subtitle">Controla el acceso a cámara y ubicación.</string>
     <string name="permission_camera">Cámara (escanear recetas)</string>
     <string name="permission_location">Ubicación GPS (incidente)</string>
     <string name="permission_camera_denied">Cámara denegada: el escaneo de recetas queda deshabilitado.</string>
