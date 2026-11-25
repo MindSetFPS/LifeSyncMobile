@@ -17,9 +17,16 @@ class HardwarePermissionStateMachine {
 
     /** Reconciliación con la fuente de verdad del sistema (`checkSelfPermission`). */
     fun onChecked(granted: Boolean) {
-        _state.value = when {
-            granted -> PermissionState.Granted
-            _state.value is PermissionState.PermanentlyDenied -> PermissionState.PermanentlyDenied
+        if (granted) {
+            _state.value = PermissionState.Granted
+            return
+        }
+        // Sin concesión se conserva la denegación previa: así el modo degradado
+        // no se pierde al volver del diálogo o de Ajustes.
+        _state.value = when (_state.value) {
+            is PermissionState.Denied,
+            is PermissionState.PermanentlyDenied,
+            -> _state.value
             else -> PermissionState.NotRequested
         }
     }

@@ -54,6 +54,17 @@ class HardwarePermissionStateMachineTest {
     }
 
     @Test
+    fun `system check keeps a previous denial`() {
+        val denied = HardwarePermissionStateMachine()
+        denied.onRequestStarted()
+        denied.onResult(granted = false, canAskAgain = true)
+
+        denied.onChecked(granted = false)
+
+        assertThat(denied.state.value).isEqualTo(PermissionState.Denied)
+    }
+
+    @Test
     fun `revoked permission returns to not requested but keeps permanent block`() {
         val granted = HardwarePermissionStateMachine()
         granted.onResult(granted = true, canAskAgain = false)
