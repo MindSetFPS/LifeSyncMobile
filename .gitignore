@@ -20,6 +20,11 @@ build/
 *.apk
 *.aab
 .cxx/
+
+# Firma de release (nunca al repositorio)
+*.jks
+*.keystore
+keystore.properties
 kotlin-compiler-daemon*.log
 
 # IDE / SO

@@ -33,20 +33,119 @@ cd backend && .venv/bin/python -m pytest                      # 14/14
 cd ../mobile && ./gradlew clean testDebugUnitTest assembleRelease bundleRelease
 ```
 
-Artefactos esperados:
+Con el keystore configurado (ver sección 4), los artefactos son:
 
 ```
-mobile/app/build/outputs/apk/release/app-release-unsigned.apk
-mobile/app/build/outputs/bundle/release/app-release.aab
+mobile/app/build/outputs/apk/release/app-release.apk          # firmado
+mobile/app/build/outputs/bundle/release/app-release.aab       # firmado
 ```
 
-## 4. Firma (simulada)
+Sin keystore disponible (desarrollo local / PRs), la variante release se genera
+sin firmar y no debe subirse a la tienda.
 
-- En producción se requiere un **Android upload key** (`.jks`) guardado en un
-  secreto del CI, **nunca** en el repositorio.
-- Se configura `signingConfigs` en `app/build.gradle.kts` leyendo variables
-  `LIFESYNC_KEYSTORE_*` inyectadas por GitHub Secrets.
-- Google Play App Signing custodia la llave de aplicación; se sube el **AAB**.
+## 4. Firma (real) — paso a paso
+
+La firma se declara en `mobile/app/build.gradle.kts` (`signingConfigs.release`) y
+se activa solo si existe el keystore indicado en `LIFESYNC_KEYSTORE_FILE`. Lee
+estas variables de entorno:
+
+| Variable | Contenido |
+|---|---|
+| `LIFESYNC_KEYSTORE_FILE` | Ruta al `.jks` de upload |
+| `LIFESYNC_KEYSTORE_PASSWORD` | Contraseña del keystore |
+| `LIFESYNC_KEY_ALIAS` | Alias de la llave |
+| `LIFESYNC_KEY_PASSWORD` | Contraseña de la llave |
+
+Sin keystore, la variante release se compila **sin firmar** y no sirve para la
+tienda. El keystore **nunca** se versiona (`.gitignore` excluye `*.jks`,
+`*.keystore` y `keystore.properties`).
+
+### 4.1 Crear la llave de upload (solo una vez)
+
+```bash
+mkdir -p ~/.keys
+export JAVA_HOME=/home/daniel/.local/share/jdks/temurin-21
+"$JAVA_HOME/bin/keytool" -genkeypair -v -keystore ~/.keys/lifesync-upload.jks -alias lifesync -keyalg RSA -keysize 4096 -validity 10000 -dname "CN=LifeSync, OU=Mobile, O=LifeSync, L=CDMX, ST=CDMX, C=MX"
+```
+
+`keytool` pedirá:
+
+1. `Enter keystore password:` → escribe y anota la contraseña.
+2. `Re-enter new password:` → repítela.
+3. `Enter key password for <lifesync>` → pulsa **Enter** (usa la misma).
+
+Queda creado `~/.keys/lifesync-upload.jks`. **No borres el archivo ni olvides la
+contraseña.**
+
+### 4.2 Compilar el AAB firmado en local
+
+```bash
+export LIFESYNC_KEYSTORE_FILE="$HOME/.keys/lifesync-upload.jks"
+export LIFESYNC_KEYSTORE_PASSWORD='TU_CONTRASEÑA'
+export LIFESYNC_KEY_ALIAS='lifesync'
+export LIFESYNC_KEY_PASSWORD='TU_CONTRASEÑA'
+```
+
+```bash
+cd mobile
+JAVA_HOME=/home/daniel/.local/share/jdks/temurin-21 ./gradlew clean bundleRelease
+```
+
+El artefacto firmado queda en
+`mobile/app/build/outputs/bundle/release/app-release.aab`. Para comprobarlo:
+
+```bash
+"$JAVA_HOME/bin/jarsigner" -verify app/build/outputs/bundle/release/app-release.aab
+```
+
+Debe imprimir `jar verified.` (si dice `jar is unsigned`, faltan las variables).
+
+### 4.3 Configurar GitHub para que el CI lo haga solo
+
+**a)** Convierte la llave a texto base64:
+
+```bash
+base64 -w0 ~/.keys/lifesync-upload.jks > ~/.keys/keystore.b64
+cat ~/.keys/keystore.b64
+```
+
+Copia la línea completa que imprime.
+
+**b)** En GitHub: repo → **Settings** → **Secrets and variables** → **Actions** →
+**New repository secret**. Crea estos cuatro:
+
+| Secret | Contenido |
+|---|---|
+| `LIFESYNC_KEYSTORE_BASE64` | lo copiado del `cat` de `keystore.b64` |
+| `LIFESYNC_KEYSTORE_PASSWORD` | contraseña del keystore |
+| `LIFESYNC_KEY_ALIAS` | `lifesync` |
+| `LIFESYNC_KEY_PASSWORD` | contraseña de la llave |
+
+**c)** Lanza el build de release de una de estas dos formas:
+
+- Push de un tag:
+```bash
+git tag -a v0.1.0 -m "LifeSync Mobile 0.1.0"
+git push origin v0.1.0
+```
+- O en GitHub: **Actions** → `CI - LifeSync Mobile` → **Run workflow**.
+
+**d)** Al terminar, descarga el artefacto `lifesync-release-aab` de la ejecución.
+Ese es el `.aab` firmado que se sube a Google Play Console.
+
+### 4.4 Qué hace el job `release` (`.github/workflows/ci.yml`)
+
+Restaura el keystore desde `LIFESYNC_KEYSTORE_BASE64`, compila `bundleRelease` con
+las variables de firma, verifica el resultado con `jarsigner` (falla si el AAB
+no está firmado) y publica `app-release.aab` como artefacto. Google Play App
+Signing custodia la llave de aplicación; al Play Console se sube el **AAB**
+firmado con la upload key.
+
+### 4.5 iOS (.ipa): pendiente
+
+El repositorio solo contiene la app Android nativa (Kotlin); no existe proyecto
+Xcode. El `.ipa` requiere crear la app iOS, una cuenta Apple Developer y un
+runner macOS con certificado de distribución.
 
 ## 5. Publicación simulada en tiendas
 
@@ -67,7 +166,8 @@ mobile/app/build/outputs/bundle/release/app-release.aab
 - [x] Doble pila de navegación protegida
 - [x] Token JWT solo en Keystore (nunca `SharedPreferences` plano)
 - [x] Mensajes de error sin información sensible
-- [ ] Firma real y subida a Play Console (requiere credenciales del propietario)
+- [x] Firma de release configurada (`signingConfigs` + job CI)
+- [ ] Subida a Play Console (requiere credenciales del propietario)
 - [ ] Pruebas UI/instrumentadas (Sprint 2)
 
 ## 7. Notas de versión 0.1.0 (Sprint 1)
