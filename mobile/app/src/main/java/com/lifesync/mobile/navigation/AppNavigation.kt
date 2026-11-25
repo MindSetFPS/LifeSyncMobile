@@ -16,6 +16,7 @@ import com.lifesync.mobile.presentation.auth.login.LoginScreen
 import com.lifesync.mobile.presentation.auth.register.RegisterScreen
 import com.lifesync.mobile.presentation.home.HomeScreen
 import com.lifesync.mobile.presentation.home.HomeViewModel
+import com.lifesync.mobile.presentation.permissions.PermissionsRoute
 import com.lifesync.mobile.presentation.profile.PatientProfileRoute
 
 private const val AUTH_GRAPH = "auth_graph"
@@ -24,6 +25,7 @@ private const val LOGIN = "login"
 private const val REGISTER = "register"
 private const val HOME = "home"
 private const val PATIENT_PROFILE = "patient_profile"
+private const val HARDWARE_PERMISSIONS = "hardware_permissions"
 
 /**
  * Navidad protegida: dos pilas independientes. El estado de autenticación
@@ -94,12 +96,16 @@ fun AppNavigation(
                 HomeScreen(
                     uiState = homeState,
                     onOpenPatientProfile = { navController.navigate(PATIENT_PROFILE) },
+                    onOpenPermissions = { navController.navigate(HARDWARE_PERMISSIONS) },
                     onLogout = homeViewModel::logout,
                     onRetry = homeViewModel::loadProfile,
                 )
             }
             composable(PATIENT_PROFILE) {
                 PatientProfileRoute(onBack = { navController.popBackStack() })
+            }
+            composable(HARDWARE_PERMISSIONS) {
+                PermissionsRoute(onBack = { navController.popBackStack() })
             }
         }
     }

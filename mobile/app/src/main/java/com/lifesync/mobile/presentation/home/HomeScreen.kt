@@ -23,6 +23,7 @@ import com.lifesync.mobile.presentation.auth.HomeUiState
 fun HomeScreen(
     uiState: HomeUiState,
     onOpenPatientProfile: () -> Unit,
+    onOpenPermissions: () -> Unit,
     onLogout: () -> Unit,
     onRetry: () -> Unit,
 ) {
@@ -54,6 +55,13 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.patient_profile_button))
+        }
+        Spacer(Modifier.height(8.dp))
+        Button(
+            onClick = onOpenPermissions,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.home_permissions_button))
         }
         Spacer(Modifier.height(8.dp))
         Button(
